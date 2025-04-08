@@ -1,86 +1,72 @@
+name: Flickzy Android CI with Firebase Test Lab
 
-# Proyecto-Electiva-I
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
 
-    <!-- Botón para iniciar el chat -->
-    <Button
-        android:id="@+id/startChatButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Iniciar Chat"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
-</androidx.constraintlayout.widget.ConstraintLayout>
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-    <!-- Flickzy -->
-    
-        android:id="@+id/appTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Mi WhatsApp"
-        android:textSize="24sp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/conversationRecyclerView" />
+    steps:
+      # Paso 1: Checkout del código
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    <!-- RecyclerView para mostrar las conversaciones -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/conversationRecyclerView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/appTitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
-</androidx.constraintlayout.widget.ConstraintLayout>
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+      # Paso 2: Configurar JDK 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
 
-    <!-- RecyclerView para mostrar los mensajes -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/messagesRecyclerView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/messageInputLayout"/>
+      # Paso 3: Establecer permisos de ejecución para gradlew
+      - name: Grant execute permission for gradlew
+        if: ${{ hashFiles('gradlew') != '' }}
+        run: chmod +x gradlew
 
-    <!-- Layout para el input de mensaje -->
-    <LinearLayout
-        android:id="@+id/messageInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+      # Paso 4: Compilar la aplicación con Gradle
+      - name: Build APK with Gradle
+        if: ${{ hashFiles('build.gradle*') != '' }}
+        run: ./gradlew assembleDebug
 
-        <EditText
-            android:id="@+id/messageEditText"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Escribe un mensaje"
-            android:inputType="text" />
+      # Paso 5: Subir el APK compilado como artefacto
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
 
-        <Button
-            android:id="@+id/sendButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Enviar" />
-    </LinearLayout>
+  firebase-test-lab:
+    needs: build
+    runs-on: ubuntu-latest
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    steps:
+      # Paso 1: Descargar el APK del paso anterior
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: apk-debug.apk
+
+      # Paso 2: Autenticarse en GCP para usar Firebase Test Lab
+      - id: 'auth'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_FIREBASE_CREDENTIALS }}'  # Asegúrate de configurar las credenciales en GitHub Secrets
+
+      # Paso 3: Configurar la CLI de Google Cloud SDK
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Paso 4: Ejecutar pruebas en Firebase Test Lab
+      - name: Run tests in Firebase Test Lab
+        run: |
+          gcloud firebase test android run \
+            --app app-debug.apk \
+            --type robo \
+            --device model=Pixel2,version=30,locale=en,orientation=portrait
