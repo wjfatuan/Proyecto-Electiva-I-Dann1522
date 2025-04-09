@@ -1,0 +1,33 @@
+# Archivos de configuración específicos de Android Studio
+*.iml
+.gradle
+/local.properties
+
+# Archivos y directorios de configuración de IntelliJ IDEA/Android Studio
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+
+# Archivos del sistema operativo (macOS, por ejemplo)
+.DS_Store
+
+# Directorios generados por el proceso de construcción
+/build
+
+# Directorios de captura de pantalla o logs
+/captures
+
+# Archivos de compilación nativos y otros archivos generados
+.externalNativeBuild
+/cxx
+
+# Archivos de configuración local
+local.properties
+
+
+git add .gitignore
+git commit -m "Añadir .gitignore"
+git push
