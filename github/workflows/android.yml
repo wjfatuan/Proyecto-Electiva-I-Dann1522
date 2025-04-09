@@ -1,4 +1,4 @@
-# .github/workflows/android-ci.yml
+
 name: Android CI
 
 on:
@@ -50,5 +50,6 @@ jobs:
     - name: 'Running tests in Firebase Test Lab'
       if: ${{ hashFiles('app-debug.apk') != '' }}
       run: 'gcloud firebase test android run --app app-debug.apk --type robo --device model=MediumPhone.arm,version=30,locale=en,orientation=portrait'
+
 
 
