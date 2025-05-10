@@ -14,24 +14,8 @@
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
--keepattributes SourceFile,LineNumberTable
+#-keepattributes SourceFile,LineNumberTable
 
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
--renamesourcefileattribute SourceFile
-
-# Rules for Firebase and other common libraries
-# Keep Firebase libraries for your app (if you use Firebase)
--keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; }
--dontwarn com.google.firebase.**
--dontwarn com.google.android.gms.**
-
-# Keep AndroidX components
--keep class androidx.** { *; }
--dontwarn androidx.**
-
-# Keep all classes and methods that are annotated with @Keep
--keep @androidx.annotation.Keep class * { *; }
-
-# Add any custom rules here as necessary for your project
+#-renamesourcefileattribute SourceFile
